@@ -17,7 +17,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik.entrypoints=http"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.yourdomain.com`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.kotalos.com`)"
       - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$xyz123" # Generate using htpasswd
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
       - "traefik.http.routers.traefik.service=api@internal"
@@ -37,7 +37,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.portainer.entrypoints=http"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.yourdomain.com`)"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.kotalos.com`)"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
 networks:
