@@ -6,21 +6,29 @@ services:
     security_opt:
       - no-new-privileges:true
     ports:
-      - "8080:80"  # Changed from 80 to avoid conflict with Apache
-      - "8443:443" # Changed from 443 to avoid conflict with Apache
+      - "80:80"
+      - "443:443"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/data:/etc/traefik
+      - ./traefik/letsencrypt:/letsencrypt
     networks:
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.entrypoints=http"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.kotalos.com`)"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$xyz123" # Generate using htpasswd
-      - "traefik.http.routers.traefik.middlewares=traefik-auth"
-      - "traefik.http.routers.traefik.service=api@internal"
+      # HTTP
+      - "traefik.http.routers.traefik-http.entrypoints=http"
+      - "traefik.http.routers.traefik-http.rule=Host(`traefik.localhost.com`) || Host(`traefik.kotalos.com`)"
+      - "traefik.http.routers.traefik-http.middlewares=https-redirect"
+      # HTTPS
+      - "traefik.http.routers.traefik-https.entrypoints=https"
+      - "traefik.http.routers.traefik-https.rule=Host(`traefik.localhost.com`) || Host(`traefik.kotalos.com`)"
+      - "traefik.http.routers.traefik-https.tls=true"
+      - "traefik.http.routers.traefik-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-https.middlewares=traefik-auth"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$xyz123"
+      - "traefik.http.routers.traefik-https.service=api@internal"
 
   portainer:
     image: portainer/portainer-ce:latest
@@ -36,8 +44,15 @@ services:
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.portainer.entrypoints=http"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.kotalos.com`)"
+      # HTTP
+      - "traefik.http.routers.portainer-http.entrypoints=http"
+      - "traefik.http.routers.portainer-http.rule=Host(`portainer.localhost.com`) || Host(`portainer.kotalos.com`)"
+      - "traefik.http.routers.portainer-http.middlewares=https-redirect"
+      # HTTPS
+      - "traefik.http.routers.portainer-https.entrypoints=https"
+      - "traefik.http.routers.portainer-https.rule=Host(`portainer.localhost.com`) || Host(`portainer.kotalos.com`)"
+      - "traefik.http.routers.portainer-https.tls=true"
+      - "traefik.http.routers.portainer-https.tls.certresolver=letsencrypt"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
 networks:
