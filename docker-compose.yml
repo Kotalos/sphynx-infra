@@ -1,59 +1,38 @@
 services:
   traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/data:/etc/traefik
-      - ./traefik/letsencrypt:/letsencrypt
+    image: traefik:v3.3
     networks:
       - proxy
+    command: 
+      --api.insecure=true
+      --providers.docker
+      --entryPoints.web.address=:80
+      --providers.docker.exposedbydefault=false
+    ports:
+      - "80:80"
+      - "8080:8080" # The Web UI (enabled by --api.insecure=true)
+    
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  whoami:
+    # A container that exposes an API to show its IP address
+    image: traefik/whoami
     labels:
       - "traefik.enable=true"
-      # HTTP
-      - "traefik.http.routers.traefik-http.entrypoints=http"
-      - "traefik.http.routers.traefik-http.rule=Host(`traefik.localhost.com`) || Host(`traefik.kotalos.com`)"
-      - "traefik.http.routers.traefik-http.middlewares=https-redirect"
-      # HTTPS
-      - "traefik.http.routers.traefik-https.entrypoints=https"
-      - "traefik.http.routers.traefik-https.rule=Host(`traefik.localhost.com`) || Host(`traefik.kotalos.com`)"
-      - "traefik.http.routers.traefik-https.tls=true"
-      - "traefik.http.routers.traefik-https.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.traefik-https.middlewares=traefik-auth"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$xyz123"
-      - "traefik.http.routers.traefik-https.service=api@internal"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
 
   portainer:
     image: portainer/portainer-ce:latest
-    container_name: portainer
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+    ports:
+      - 9443:9443
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./portainer/data:/data
-    networks:
-      - proxy
-    labels:
-      - "traefik.enable=true"
-      # HTTP
-      - "traefik.http.routers.portainer-http.entrypoints=http"
-      - "traefik.http.routers.portainer-http.rule=Host(`portainer.localhost.com`) || Host(`portainer.kotalos.com`)"
-      - "traefik.http.routers.portainer-http.middlewares=https-redirect"
-      # HTTPS
-      - "traefik.http.routers.portainer-https.entrypoints=https"
-      - "traefik.http.routers.portainer-https.rule=Host(`portainer.localhost.com`) || Host(`portainer.kotalos.com`)"
-      - "traefik.http.routers.portainer-https.tls=true"
-      - "traefik.http.routers.portainer-https.tls.certresolver=letsencrypt"
-      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      - data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  data:
 
 networks:
   proxy:
